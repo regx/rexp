@@ -1,0 +1,70 @@
+\documentclass{article}
+
+\usepackage{tikz}
+\usepackage{pgfplots, pgfplotstable}
+
+\begin{document}
+
+\pgfplotstableread
+	{data/BasicExecutor.txt}
+	\datatable
+	
+\begin{figure}
+	\begin{tikzpicture}
+		\begin{axis}[
+			ymin=0,
+			minor tick num=4,
+			enlarge x limits=false,
+			axis on top,
+			every axis plot post/.append style=
+			{mark=none},
+			const plot,
+			legend style={
+			area legend,
+			at={(0.5,-0.15)},
+			anchor=north,
+			legend columns=-1}]
+			
+			% Note: Use resource filtering for "y"
+%			\addplot table[x=N,y=m_NfaTree] from \datatable;
+%			\addplot table[x=N,y=m_CnfaEvalTree] from \datatable;
+			\addplot table[x=N,y=m_NfaAaTree] from \datatable;
+			\addplot table[x=N,y=m_CnfaAaTree] from \datatable;
+			\legend{mNfa,mCnfa}
+		\end{axis}
+		
+	\end{tikzpicture}
+	\caption{Memory consumption}
+\end{figure}
+
+ \begin{figure}
+ 	\begin{tikzpicture}
+% 		\begin{axis}[
+% 			ymin=0,
+% 			minor tick num=4,
+% 			enlarge x limits=false,
+% 			axis on top,
+% 			every axis plot post/.append style=
+% 			{mark=none},
+% 			const plot,
+% 			legend style={
+% 			area legend,
+% 			at={(0.5,-0.15)},
+% 			anchor=north,
+% 			legend columns=-1}]
+%		\begin{axis}[width=190pt,axis x line=middle, axis y line=center, tick align=outside]
+		\begin{axis}[xlabel=x,ylabel=ns,height=10cm,width=9cm, ymin=0, legend pos=north west,scaled ticks=false]
+			
+			% Note: Use resource filtering for "y"
+%			\addplot table[x=N, y=t_NfaTree] from \datatable;
+% 			\addplot table[x=N, y=t_CnfaEvalTree] from \datatable;
+ 			\addplot table[x=N, y=t_NfaAaTree] from \datatable;
+ 			\addplot table[x=N, y=t_CnfaAaTree] from \datatable;
+			
+ 			\legend{tNfa, tCnfa}
+ 		\end{axis}
+ 	\end{tikzpicture}
+ 	\caption{Execution time in nanoseconds}
+ \end{figure}
+
+\end{document}

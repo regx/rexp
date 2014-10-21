@@ -1,0 +1,190 @@
+options {
+  STATIC = false;
+}
+
+PARSER_BEGIN(RegExpParser)
+
+package eu.fox7.rexp.parser;
+
+import eu.fox7.rexp.regexp.base.*;
+import eu.fox7.rexp.regexp.core.*;
+import eu.fox7.rexp.data.*;
+
+import java.io.*;
+
+public class RegExpParser {
+  public static void main(String[] args) {
+    RegExpParser parser = new RegExpParser(new StringReader(args[0]));
+    try {
+      System.out.println(parser.parse().toString());
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+}
+
+PARSER_END(RegExpParser)
+
+SKIP : {" " | "\n" | "\r" | "\r\n" }
+<DEFAULT, IN_REGEX>
+TOKEN : {
+  < COMMA : "," > : DEFAULT |
+  < EMPTY : "()" > : DEFAULT |
+  < LBRACE : "(" > : DEFAULT |
+  < RBRACE : ")" > : IN_REGEX |
+  < LCBRACE : "{" > : DEFAULT |
+  < RCBRACE : "}" > : IN_REGEX |
+  < ASTERIK : "*" > : IN_REGEX |
+  < PLUS : "+" > : IN_REGEX |
+  < PIPE : "|" > : DEFAULT |
+  < EPSILON : "°" > : DEFAULT |
+  < NUM : (["0"-"9"]) > : DEFAULT |			// changed to single
+  < SNUM : ("inf") > : DEFAULT |
+  < CHAR : (["a"-"z","A"-"Z"]) > : DEFAULT	// removed "0"-"9"
+}
+RegExp parse() : {
+    RegExp r;
+}
+{
+  r=sequence()
+  <EOF>
+  { return r; }
+}
+RegExp sequence() : {
+    RegExp r1;
+    RegExp r2;
+}
+{
+  r1=expr()
+  (
+    (
+      <PIPE>
+      r2=expr()
+      { r1 = new Union(r1, r2); }
+    ) | (
+      r2=expr()
+      { r1 = new Concat(r1, r2); }
+    )
+  )*
+  { return r1; }
+}
+RegExp expr() : {
+    RegExp r;
+}
+{
+  (
+    r=braced()
+    |
+    r=simple()
+  )
+  { return r; }
+}
+RegExp braced() : {
+    RegExp r;
+}
+{
+  <LBRACE>
+  r=sequence()
+  <RBRACE>
+  (
+    r=repetition(r)
+  )*
+  { return r; }
+}
+RegExp repetition(RegExp r) : {
+    int m;
+    int n;
+}
+{
+  (
+    (
+      <ASTERIK>
+      { return new Star(r); }
+    ) | (
+      <LCBRACE>
+      m=num()
+      <COMMA>
+      n=num()
+      <RCBRACE>
+      { return new Counter(r, m, n); }
+    )
+  )
+}
+RegExp simple() : {
+   RegExp r1;
+   RegExp r2;
+   RegExp r3;
+}
+{
+  { r2 = null; }
+  
+  r1=atom()
+  (
+    { if (r2 != null) r1 = new Concat(r1, r2); }
+    r2=atom()
+  )*
+
+  { r3 = (r2 != null) ? r2 : r1; }
+  (
+    r3=repetition(r3)
+  )*
+  { r1 = (r2 != null) ? new Concat(r1, r3) : r3;  }
+
+  { return r1; }
+}
+RegExp atom() : {
+    RegExp r;
+}
+{
+  (
+    r=symbol()
+    |
+    r=epsilon()
+  )
+  { return r; }
+}
+RegExp symbol() : {
+    Token t;
+}
+{
+  (
+    t=<CHAR>
+    |
+    t=<NUM>
+  )
+  { return new ReSymbol(new CharSymbol(t.image.charAt(0))); }
+}
+RegExp epsilon() : {
+}
+{
+  (
+    <EPSILON>
+    |
+    <EMPTY>
+  )
+  { return new Epsilon(); }
+}
+int num() : {
+    Token t;
+    String s;
+}
+{
+  (
+    s=numString()
+    |
+    t=<SNUM>
+    { s = t.image; }
+  )
+  { return "inf".equals(s) ? Counter.INFINITY : Integer.parseInt(s); }
+}
+String numString() : {
+    Token t;
+    StringBuilder sb = new StringBuilder();
+}
+{
+  (
+    t=<NUM>
+    { sb.append(t.image); }
+  )+
+  { return sb.toString(); }
+}

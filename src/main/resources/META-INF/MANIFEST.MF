@@ -1,0 +1,2 @@
+Premain-Class: eu.fox7.rexp.util.MemoryAgent
+Agent-Class: eu.fox7.rexp.util.MemoryAgent

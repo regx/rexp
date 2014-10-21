@@ -1,0 +1,217 @@
+options {
+  STATIC = false;
+}
+
+PARSER_BEGIN(RegExpParser)
+
+package eu.fox7.rexp.parser;
+
+import eu.fox7.rexp.renodes.base.*;
+import eu.fox7.rexp.renodes.core.*;
+import eu.fox7.rexp.data.*;
+
+public class RegExpParser {
+  public static void main(String[] args) throws ParseException, TokenMgrError {
+    RegExpParser parser = new RegExpParser(System.in);
+    System.out.println(parser.parse().toString());
+  }
+}
+
+PARSER_END(RegExpParser)
+
+SKIP : {" " | "\n" | "\r" | "\r\n" }
+<DEFAULT, IN_REGEX>
+TOKEN : {
+  < COMMA : "," > : DEFAULT |
+  < EMPTY : "()" > : DEFAULT |
+  < LBRACE : "(" > : DEFAULT |
+  < RBRACE : ")" > : IN_REGEX |
+  < LCBRACE : "{" > : DEFAULT |
+  < RCBRACE : "}" > : IN_REGEX |
+  < ASTERIK : "*" > : IN_REGEX |
+  < PLUS : "+" > : IN_REGEX |
+  < PIPE : "|" > : DEFAULT |
+  < EPSILON : "°" > : DEFAULT |
+  < NUM : (["0"-"9"]) > : DEFAULT |			// changed to single
+  < SNUM : ("inf") > : DEFAULT |
+  < CHAR : (["a"-"z","A"-"Z"]) > : DEFAULT	// removed "0"-"9"
+}
+RegExp parse() : {
+    RegExp r;
+} {  // Example: (a(bc)*(d|e){2,3})|a. Not allowed: (a)** but a**
+  r=union()
+  <EOF>
+  { return r; }
+}
+RegExp union() : {
+    RegExp r1;
+    RegExp r2;
+} {
+  r1=concat()
+  (
+    <PIPE>
+    r2=concat()
+    { r1 = new Union(r1, r2); }
+  )*
+  { return r1; }
+}
+RegExp concat() : {
+    RegExp r1;
+    RegExp r2;
+} {
+  r1=braceOrSimple()
+  (
+    r2=braceOrSimple()
+    { r1 = new Concat(r1, r2); }
+  )*
+  { return r1; }
+}
+RegExp braceOrSimple() : {
+    RegExp r;
+}
+{
+  (
+  	LOOKAHEAD( bracedExpr() )
+  	r=bracedExpr()
+    |
+    r=string()
+  )
+  { return r; }
+}
+RegExp string() : {
+    RegExp r1;
+    RegExp r2;
+}
+{
+  r1=simpleExpr()
+  (
+    r2=simpleExpr()
+    { r1 = new Concat(r1, r2); }
+  )*
+  { return r1; }
+}
+RegExp simpleExpr() : {
+    RegExp r;
+    int m;
+    int n;
+} {
+  r=simple()
+  (
+    (
+    <LCBRACE>
+      m=num()
+      <COMMA>
+      n=num()
+      <RCBRACE>
+      { r = new Counter(r, m, n); }
+    ) | (
+      <ASTERIK>
+      { r = new Star(r); }
+    )
+  )*
+  { return r; }
+}
+RegExp bracedExpr() : {
+    RegExp r;
+} {
+  (
+    LOOKAHEAD( bracedStar() )
+    r=bracedStar()
+    |
+    LOOKAHEAD( bracedCounter() )
+    r=bracedCounter()
+    |
+    LOOKAHEAD( bracedUnion() )
+    r=bracedUnion()
+  )
+  { return r; }
+}
+RegExp bracedUnion() : {
+    RegExp r;
+} {
+  <LBRACE>
+  r=union()
+  <RBRACE>
+  { return r; }
+}
+RegExp bracedStar() : {
+    RegExp r;
+} {
+  <LBRACE>
+  r=union()
+  <RBRACE>
+  <ASTERIK>
+  { return new Star(r); }
+}
+RegExp bracedCounter() : {
+    RegExp r;
+    int m;
+    int n;
+} {
+  <LBRACE>
+  r=union()
+  <RBRACE>
+    
+  <LCBRACE>
+  m=num()
+  <COMMA>
+  n=num()
+  <RCBRACE>
+  { return new Counter(r, m, n); }
+}
+RegExp simple() : {
+    RegExp r;
+}
+{
+  (
+    r=symbol()
+    |
+    r=epsilon()
+  )
+  { return r; }
+}
+Char symbol() : {
+    Token t;
+}
+{
+  (
+    t=<CHAR>
+    |
+    t=<NUM>  // moved from char to this
+  )
+  { return new Char(new Symbol(t.image.charAt(0))); }
+}
+Epsilon epsilon() : {
+}
+{
+  (
+    <EPSILON>
+    |
+    <EMPTY>
+  )
+  { return new Epsilon(); }
+}
+int num() : {
+    Token t;
+    String s;
+}
+{
+  (
+    s = numString()		// new solution, introduce "s"
+    |
+    t=<SNUM>
+    { s = t.image; }
+  )
+  { return "inf".equals(s) ? Counter.INFINITY : Integer.parseInt(s); }
+}
+String numString() : {
+    Token t;
+    StringBuilder sb = new StringBuilder();
+}
+{
+  (
+    t=<NUM>
+    { sb.append(t.image); }
+  )*
+  { return sb.toString(); }
+}

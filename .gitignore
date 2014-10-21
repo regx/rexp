@@ -1,0 +1,4 @@
+target/
+src/main/resources/local.properties
+.idea/
+*.iml

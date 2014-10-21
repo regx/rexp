@@ -1,0 +1,7 @@
+http://grepcode.com/file/(.*?)/([^/]+.xsd)>>http://grepcode.com/file_/$1/$2/?v=source
+http://code.google.com/[pr]/(.*?)/source/browse/trunk/(.*?)\?r=([0-9]+)>>http://$1.googlecode.com/svn-history/r$3/trunk/$2
+http://code.google.com/[pr]/(.*?)/source/browse/(.*?)\?(.*)r=(.*)>>http://$1.googlecode.com/hg-history/$4/$2
+http://code.google.com/[pr]/(.*?)/source/browse/trunk/(.*).xsd>>http://$1.googlecode.com/svn/trunk/$2.xsd
+http://code.google.com/[pr]/(.*?)/source/browse/(.*)>>http://$1.googlecode.com/hg/$2
+http://fossies.org/unix/(.*?):a(.*)>>http://fossies.org/unix/$1:t$2
+https://bitbucket.org/henmar/(.*?)/src/(.*)>>https://bitbucket.org/henmar/$1/raw/$2
